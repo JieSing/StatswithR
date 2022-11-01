@@ -1,3 +1,3 @@
 # StatswithR
-Statistics and Modeling with R
-CMU 6600-A 
+Statistics and Modeling projects with R.
+associated with CMU 6600-A.
