@@ -1,0 +1,238 @@
+---
+title: 'Modern Programming for Data Analytics: Intro to R and RStudio using the tidyverse'
+date: '2022-09-27'
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The goal is to introduce you to creating data visualizations using R and RStudio. To straighten out which is which: R is the name of the programming language itself and RStudio is a convenient interface.
+
+## R Studio
+
+Sign on  ondemand.bil.psc.edu and select "R Studio Server" from the Apps then Launch a session. You should see a window that looks like the image shown below when your session starts.
+
+
+![RStudio Console](OODRStudio.png)
+
+The panel in the upper right contains your workspace as well as a history of the commands that you’ve previously entered. Any plots that you generate will show up in the panel in the lower right corner.
+
+The panel on the left is the consol where all the action happens and you will run your commands. Everytime you launch RStudio, it will have the same text at the top of the console telling you the version of R that you’re running. Below that information is the prompt. Initially, interacting with R is all about typing commands and interpreting the output. These commands and their syntax have evolved over decades and now provide what many users feel is a fairly natural way to access data and organize, describe, and invoke statistical computations.
+
+
+## R Packages
+
+R is an open-source programming language and packages are made availale for free to the community. We will use the following R packages for this introduction:
+
+dplyr: for data wrangling
+ggplot2: for data visualization
+
+These packages have been installed for you, but you will need to load them into your workspace using the following:
+
+```{r, results = FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+```
+
+## Dataset
+
+We will start by downloading a TidyTuesday dataset from last week. Available here: [https://github.com/rfordatascience/tidytuesday/tree/master/data/2022/2022-09-20](https://github.com/rfordatascience/tidytuesday/tree/master/data/2022/2022-09-20) . You will find the README here along with more information about the data- take a minute to check it out!
+
+Side Note: TidyTuesday is a community weekly data project aiming to understand how to summarize and arrange data to make meaningful charts. Check it out here: https://twitter.com/hashtag/TidyTuesday.
+
+### Wastewater Plants
+
+This data comes from Macedo et al, 2022 by way of [Data is Plural](https://www.data-is-plural.com/archive/2022-05-04-edition/).
+
+See the Distribution and characteristics of wastewater treatment plants within the global river network
+
+How to cite:
+
+Ehalt Macedo, H., Lehner, B., Nicell, J., Grill, G., Li, J., Limtong, A., and Shakya, R.: Distribution and characteristics of wastewater treatment plants within the global river network, Earth Syst. Sci. Data, 14, 559–577, https://doi.org/10.5194/essd-14-559-2022, 2022.
+
+
+The main objective of wastewater treatment plants (WWTPs) is to remove pathogens, nutrients, organics, and other pollutants from wastewater. After these contaminants are partially or fully removed through physical, biological, and/or chemical processes, the treated effluents are discharged into receiving waterbodies. However, since WWTPs cannot remove all contaminants, especially those of emerging concern, they inevitably represent concentrated point sources of residual contaminant loads into surface waters. To understand the severity and extent of the impact of treated-wastewater discharges from such facilities into rivers and lakes, as well as to identify opportunities of improved management, detailed information about WWTPs is required, including (1) their explicit geospatial locations to identify the waterbodies affected and (2) individual plant characteristics such as the population served, flow rate of effluents, and level of treatment of processed wastewater. These characteristics are especially important for contaminant fate models that are designed to assess the distribution of substances that are not typically included in environmental monitoring programs. Although there are several regional datasets that provide information on WWTP locations and characteristics, data are still lacking at a global scale, especially in developing countries. Here we introduce a spatially explicit global database, termed HydroWASTE, containing 58,502 WWTPs and their characteristics. This database was developed by combining national and regional datasets with auxiliary information to derive or complete missing WWTP characteristics, including the number of people served. A high-resolution river network with streamflow estimates was used to georeference WWTP outfall locations and calculate each plant's dilution factor (i.e., the ratio of the natural discharge of the receiving waterbody to the WWTP effluent discharge). The utility of this information was demonstrated in an assessment of the distribution of treated wastewater at a global scale. Results show that 1,200,000 km of the global river network receives wastewater input from upstream WWTPs, of which more than 90 000 km is downstream of WWTPs that offer only primary treatment. Wastewater ratios originating from WWTPs exceed 10 % in over 72,000 km of rivers, mostly in areas of high population densities in Europe, the USA, China, India, and South Africa. In addition, 2533 plants show a dilution factor of less than 10, which represents a common threshold for environmental concern. HydroWASTE can be accessed at https://doi.org/10.6084/m9.figshare.14847786.v1 (Ehalt Macedo et al., 2021).
+
+We will start by loading the data using readr()
+
+```{r}
+watertreatment <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-09-20/HydroWASTE_v10.csv')
+
+```
+## Data Exploration
+
+We can take a look at the data by typing its name into the console.
+
+```{r}
+watertreatment
+```
+Looking at the dataset like this might not be that useful. RStudio has a built-in data viewer. You can also click on the  data in the environment window in the top right hand corner that will bring up a new window in your workspace. You can view the data there and close this window when you are done.
+
+Other ways you can explore the dataset:
+
+The dimensions of the dataset
+```{r}
+dim(watertreatment)
+```
+You should see number of rows (58502) and the number columns (25) preceded by `[1]`.
+
+The names for the columns/variables in your dataset:
+```{r}
+names(watertreatment)
+```
+
+You can also use `glimpse()` to look at the structure of your dataset
+```{r}
+glimpse(watertreatment)
+```
+
+
+Let’s start to examine the data a little more closely. We can access the data in a single column of a data frame separately using a command like
+
+```{r, results = FALSE}
+watertreatment$COUNTRY
+```
+This command will only show countries for each of the water treatment plants. The dollar sign basically says “go to the data frame that comes before me, and find the variable that comes after me”.
+
+Notice that the way R has printed these data is different. When we looked at the complete data frame, we saw 58502 rows, one on each line of the display. These data are no longer structured in a table with other variables, so they are displayed one right after another. Objects that print out in this way are called vectors; they represent a set of numbers. R has added numbers in [brackets] along the left side of the printout to indicate locations within the vector. For example, Lithuania follows [1], indicating that Lithuania is the first entry in the vector. And if [91] starts a line, then that would mean the first number on that line would represent the 91st entry in the vector, in this case Estonia.
+
+You can see how many unique entires are in a single column in this dataset:
+```{r}
+unique(watertreatment$COUNTRY)
+
+```
+
+Later on you will see `%>%` being used. This is a forward-pipe operator. If we wanted to execute the same command as before and find unique entries of a column, we could use the following:
+```{r, results=FALSE}
+watertreatment$COUNTRY %>% unique
+```
+
+
+## Visualization
+
+R has some powerful functions for making graphics. We can create a simple plot looking at which treatment plants serve the largest population in the United States
+
+
+```{r}
+ggplot(data = watertreatment, aes(x = WASTE_DIS, y = POP_SERVED))+
+  geom_point()
+```
+
+We can use tidyverse formatting to look at a subset of the dataset. Below we can see this same dataset but for only the United States.
+```{r}
+ggplot(data = subset(watertreatment, COUNTRY %in% "United States"), aes(x = WASTE_DIS, y = POP_SERVED))+
+  geom_point()
+```
+
+Using ggplot we can easily change the format of this plot and swap the points for lines
+
+```{r}
+ggplot(data = subset(watertreatment, COUNTRY %in% "United States"), aes(x = WASTE_DIS, y = POP_SERVED))+
+  geom_line()
+```
+
+We use the ggplot() function to build plots. If you run the plotting code in your console, you should see the plot appear under the Plots tab of the lower right panel of RStudio. Notice that the command above again looks like a function, this time with arguments separated by commas.
+
+The first argument is always the dataset.
+Next, we provide the variables from the dataset to be assigned to aesthetic elements of the plot, e.g. the x and the y axes.
+Finally, we use another layer, separated by a + to specify the geometric object for the plot. Since we want to scatterplot, we use geom_point.
+You might wonder how you are supposed to know the syntax for the ggplot function. Thankfully, R documents all of its functions extensively. To read what a function does and learn the arguments that are available to you, just type in a question mark followed by the name of the function that you’re interested in. Try the following in your console:
+
+```{r}
+?ggplot
+```
+
+Notice that the help file replaces the plot in the lower right panel. You can toggle between plots and help files using the tabs at the top of that panel.
+
+## Dive Deeper
+
+Let's make a few plots that are more involved and answer some more interesting questions
+
+
+Let's look to answer the question: Are primary, secondary, or advanced water treatment plants are serving larger populations?
+
+Plot/code adapted from: https://twitter.com/ryanahart/status/1572959293145579521
+
+```{r}
+df <- watertreatment %>% 
+  filter(!STATUS %in% c("Closed", "Projected", "Non-Operational", "Under Construction", "Decommissioned", "Proposed")) %>%
+  select(COUNTRY, POP_SERVED, LEVEL) %>% 
+  filter(POP_SERVED >= 1000000)#filter on population greater than 1M
+
+df$LEVEL <- factor(df$LEVEL, levels = c("Primary", "Secondary", "Advanced"))
+
+df %>%
+  ggplot(aes(x = POP_SERVED, color = LEVEL, fill = LEVEL)) +
+  geom_density(alpha = 0.3) +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_x_continuous(expand = c(0, 0))+
+  coord_cartesian(clip = 'off') +
+  theme_minimal() +
+  theme(text = element_text(size = 9,  color = "#000000"),
+        plot.title = element_text( size = 22, hjust = 0, face = "bold"),
+        plot.title.position = "plot",
+        plot.subtitle = element_text( size = 9, hjust = 0),
+        plot.caption.position = "plot",
+        plot.caption = element_text(size = 7,  color = "#000000", hjust = 0),
+        axis.title.y = element_blank(),
+        axis.title.x = element_text(size = 8,  color = "#000000"),
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(size = 8,  color = "#000000"),
+        legend.position = "top",
+        legend.title = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_line(color = "#000000", size = 0.25, linetype = "dotted"),
+        axis.line.x.bottom = element_line(color = "#000000", size = 0.4),
+        plot.margin = unit(c(1.3, 1.3, 1.3, 1.3), "cm"),
+        plot.background = element_rect(color = "#F2F2F2", fill = "#F2F2F2")) +
+  labs(title = "Wastewater Treatment Plants",
+       subtitle = "By the three levels, the distribution of the estimated population\nserved (greater than one million) from 239 wastewater treatment\nplants globally.\n",
+       x = "\nEstimated Population Served\n")
+
+```
+
+Next let's take a look at the quality of the water treatment plants that are serving the largest populations globally.
+
+Plot/code adapted from: https://twitter.com/PursuitOfDS/status/1572250817457172480
+```{r}
+library(forcats)
+
+watertreatment <- watertreatment |>
+  mutate(QUAL_LOC_INDEX = case_when(QUAL_LOC == 1 ~ "high",
+                              QUAL_LOC == 2 ~ "medium",
+                              QUAL_LOC == 3 ~ "low",
+                              QUAL_LOC == 4 ~ "unknown"))
+
+
+watertreatment |>
+  add_count(WWTP_NAME) |>
+  filter(!is.na(WWTP_NAME)) |>
+  slice_max(POP_SERVED, n = 20, with_ties = F) |> 
+  filter(n == 1) |>
+  mutate(WWTP_NAME = paste0(WWTP_NAME, " (", COUNTRY, ")"),
+         WWTP_NAME = fct_reorder(WWTP_NAME, POP_SERVED)) |>
+  
+  ggplot(aes(POP_SERVED, WWTP_NAME, fill = QUAL_LOC_INDEX)) +
+  geom_col(position = "dodge") +
+  scale_fill_brewer(palette = "Set1") +
+  scale_x_continuous(labels = scales::comma) +
+  labs(x = "population served",
+       y = NULL,
+       fill = "quality",
+       title = "20 Largest Population Served Wastewater Plants")
+```
+
+## Resources for learning more about R
+
+[RMarkdown Cheatsheet](http://www.rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
+
+[Data wrangling cheatsheet with dplyr and tidyr](http://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf)
+
+[R for Data Science](https://r4ds.had.co.nz/)
+
+

@@ -1,0 +1,98 @@
+---
+title: "36-600 Project 1"
+author: "Jie Sing Yoo"
+date: "Fall 2022"
+output:
+  html_document:
+    df_print: paged
+---
+```{r}
+suppressMessages(library(dplyr))
+suppressWarnings(library(tidyverse))
+suppressWarnings(library(gridExtra))
+suppressMessages(library(corrplot))
+suppressMessages(library(GGally))
+```
+
+## Dataset 
+
+```{r}
+df = read.csv("C:/Users/Jie Sing Yoo/Downloads/CMU Coursework/Overview of Statistical Learning and Modeling/R_labs/data/creditBalance.csv",header=TRUE)
+```
+
+```{r}
+head(df)
+```
+```{r}
+summary(df)
+```
+
+No obvious non-informative columns.
+No weird values, therefore no error values.
+
+```{r}
+names(which(colSums(is.na(df))>=1))
+```
+This shows that none of the columns has null values.
+
+
+```{r}
+hist(df$Balance,main='Histogram for Credit Balance',xlab='Credit Balance') 
+```
+
+## Nonquantitative value
+
+```{r}
+df_bar = df %>% select(.,Gender,Married,Student) %>% gather(.)
+head(df_bar,3)
+```
+```{r}
+ggplot(df_bar,mapping=aes(x=value)) + geom_bar(color='red',fill='blue') + facet_wrap(~key,scales='free_x')
+# People that are non a student are more than people that are student
+```
+
+```{r}
+plot1 = ggplot(data=df,mapping=aes(x=Gender,y=Balance)) + geom_boxplot(color='black',fill='yellow')
+plot2 = ggplot(data=df,mapping=aes(x=Married,y=Balance)) + geom_boxplot(color='black',fill='yellow')
+plot3 = ggplot(data=df,mapping=aes(x=Student,y=Balance)) + geom_boxplot(color='black',fill='yellow')
+grid.arrange(plot1,plot2,plot3,ncol=3)
+```
+Credit balance for male and female has no significant difference.
+Credit balance for married or not married has no significant difference.
+This shows that gender and marital status has no linear correlation with the credit balance.
+The credit balance for students is higher on average than those that are not student. However, the sample size for student is too small to draw a confident conclusion.
+
+## Quantitative Value
+
+```{r}
+df_new <- subset(df,select=-c(Gender,Student,Married,Balance)) %>% gather(.)
+```
+
+```{r}
+ggplot(data=df_new,mapping=aes(x=value)) +
+geom_histogram(color="blue",fill="yellow",bins=25) + 
+facet_wrap(~key,scales='free_x') 
+```
+
+```{r}
+num.var = 6
+ggplot(data=df_new,mapping=aes(x=value,y=rep(df$Balance,num.var))) +
+geom_point(size=0.1) +
+facet_wrap(~key,scales='free_x') +
+ylab("Credit Balance")
+
+```
+
+```{r}
+df %>%
+subset(.,select=-c(Gender,Student,Married))%>%
+cor(.) %>%
+corrplot.mixed(.,upper='number',lower="color",tl.pos='lt',diag='l')
+```
+Limit and Rating of a person in the dataset have high linear correlation with the credit balance.
+```{r}
+df %>%
+subset(.,select=-c(Gender,Student,Married))%>%
+ggpairs(.,upper=list(continuous='points'))
+```
+
