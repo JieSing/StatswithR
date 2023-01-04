@@ -1,0 +1,124 @@
+---
+title: "Lab_13R"
+author: "36-600"
+date: "Fall 2022"
+output:
+  html_document:
+    toc: no
+    toc_float: no
+    theme: spacelab
+  pdf_document:
+    toc: no
+---
+
+## Data
+
+Below we read in Joe Biden's 2021 inauguration speech as formatted by the White House on its website (with one exception: I concatenated the lines containing a poem together into one line).
+```{r}
+lines = readLines("http://www.stat.cmu.edu/~pfreeman/biden_2021.txt")
+```
+
+## Question 1
+
+How many lines are there? How many characters are there, overall? (This includes spaces and punctuation, for now.)
+```{r}
+# FILL ME IN
+length(lines)
+sum(nchar(lines))
+```
+
+## Question 2
+
+How many spaces are there in the speech, as formatted? (Don't worry about the fact that there would be spaces between the lines if they were all concatenated together.) One way to do this is to use `gregexpr()` to identify every place where there are spaces, then use a for-loop to loop over the output from that function and count the number of spaces. For instance:
+```
+out = [output from some function call]
+total = 0
+for ( ii in 1:length(lines) ) {
+  total = total+length(out[[ii]])
+}
+```
+
+```{r}
+# FILL ME IN
+out = gregexpr(" ", lines)
+total = 0
+
+for ( ii in 1:length(lines) ) {
+  total = total+length(out[[ii]])
+}
+total
+```
+
+## Question 3
+
+Create a table showing how many words are on each line of the speech. For our purposes, words are separated by spaces. Utilize `strsplit()`. The output will be a list, where each element shows the individual words from a speech line. Determine the total number of words for each line, put the results in a vector, and run `table()` with that vector as input. You should find that nine of the lines have one word, etc. (Note that you'll utilize a for-loop again, in a manner similar to the last question.)
+```{r}
+# FILL ME IN
+words = c()
+count = c()
+for ( ii in 1:length(lines) ) {
+  words[ii] = strsplit(lines[ii],split="[ !\\. ]")
+  count[ii] = length(words[[ii]])
+}
+table(unlist(count))
+```
+
+## Question 4
+
+Define a variable called `america` which is true if the word "America" is observed in a speech line, and false otherwise. Run `sum()` on that variable to see how many lines have "America" in it. Don't overthink this: you can do this in one line utilizing `grepl()`.
+```{r}
+# FILL ME IN
+america = grepl("America",lines[1:length(lines)])
+sum(america)
+```
+
+## Question 5
+
+Concatenate Biden's inaugural speech into a single line. Call the output `speech`. Make sure that you insert a space between the end of each of the old lines and the beginning of the next lines. (See our use of the `collapse` argument in `paste()`.)
+```{r}
+# FILL ME IN
+speech = tolower(unlist(strsplit(lines,split="[ ,!\\.]")))
+paste(speech,collapse=" ")
+```
+
+## Question 6
+
+Working either with `lines` or with `speech`, utilize the framework on the last slide of the notes to remove punctuation and stopwords, leaving a single line speech in the end.
+```{r}
+# FILL ME IN
+suppressMessages(library(stopwords))
+
+w = which(nchar(speech)==0)
+speech = speech[-w]  
+stopword.logical = speech %in% stopwords("en")
+speech.nostopword = paste(speech[stopword.logical==FALSE],collapse=" ")
+speech.nostopword
+```
+
+## Question 7
+
+What are the top 20 words (meaning, non-stopwords) in Biden's speech? You might notice that "America" appears less than you'd expect, given your result above...but when you searched on "America" above, you probably also found "American" and "Americans," etc. (Unless you crafted a really exact regex!)
+```{r}
+# FILL ME IN
+sort(table(unlist(strsplit(speech.nostopword,split="[[:space:]]"))),decreasing=TRUE)[1:20]
+```
+
+## Question 8
+
+How many digits (0 through 9) are there in the speech? To be clear, 2021 would be considered four digits.
+```{r}
+# FILL ME IN
+out = gregexpr("0|1|2|3|4|5|6|7|8|9",lines)
+num = regmatches(lines,out)
+length(unlist(num))
+```
+
+## Question 9
+
+We'll round this off by asking you to determine how many punctuation marks are left in the speech. (Hint: look in the notes for a notation that represent all punctuation marks!) This can include apostrophes, etc....anything considered a punctuation mark within the scope of regular expressions. Basically, you are doing the same thing here as for Question 8, except swapping in a new regex.
+```{r}
+# FILL ME IN
+out     = gregexpr("[[:punct:]]",lines)
+match = regmatches(lines,out)
+length(unlist(match))
+```

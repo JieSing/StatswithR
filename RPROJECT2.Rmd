@@ -1,0 +1,207 @@
+---
+title: "36-600 Project 2"
+author: "Jie Sing Yoo"
+date: "Fall 2022"
+output:
+  html_document:
+    df_print: paged
+---
+```{r}
+suppressMessages(library(dplyr))
+suppressWarnings(library(tidyverse))
+suppressWarnings(library(gridExtra))
+suppressMessages(library(corrplot))
+suppressMessages(library(GGally))
+```
+
+## Dataset (Data Pre-processing)
+
+```{r}
+df = read.csv("C:/Users/Jie Sing Yoo/Downloads/CMU Coursework/Overview of Statistical Learning and Modeling/R_labs/data/diamonds.csv",header=TRUE,stringsAsFactors = TRUE)
+```
+
+```{r}
+head(df)
+```
+```{r}
+# Remove column 'X'
+df <- df %>% dplyr::select(.,-X)
+```
+
+```{r}
+summary(df)
+```
+```{r}
+dim(df)
+```
+
+No obvious non-informative columns.
+No weird values, therefore no error values.
+
+```{r}
+names(which(colSums(is.na(df))>=1))
+```
+This shows that none of the columns has null values.
+
+```{r}
+# check for null values
+names(which(colSums(is.na(df))>=1))
+```
+
+## EDA
+
+Quantitative Values
+
+```{r}
+num_df <- subset(df,select=-c(cut,color,clarity)) %>% gather(.)
+```
+
+```{r}
+ggplot(data=num_df,mapping=aes(x=value)) +
+geom_histogram(color="blue",fill="yellow",bins=25) + 
+facet_wrap(~key,scales='free_x') 
+```
+
+```{r}
+subset(df,select=-c(cut,color,clarity)) %>% cor(.) %>%
+corrplot.mixed(.,upper="number",lower="color",tl.pos='lt',diag='l')
+```
+From the correlation plot, ‘price’ has high positive correlation with ‘x’, ‘y’, ‘z’ and ‘carat’, and has negligible correlation with ‘depth’ and ‘table’.
+
+‘carat’, ‘x’, ‘y’, ‘z’ have high multi-collinearity with each other.
+
+```{r}
+set.seed(100)
+r_index <- sample(c(TRUE,FALSE), nrow(df),replace=TRUE,prob=c(0.9,0.1))
+df.sample <- df[!r_index,]
+
+# Plot scatter plots of quantitative variables against the response variable 'price'
+df_new <- subset(df.sample,select=-c(price,cut,color,clarity)) %>% gather(.)
+num.var <- 6
+ggplot(data=df_new, mapping=aes(x=value,y=rep(df.sample$price,num.var))) + geom_point(size=0.2) + facet_wrap(~key,scales='free_x') + ylab("Price")
+
+```
+
+## Transformation of skewed numerical features:
+
+```{r}
+df$price = log(df$price)
+df$carat = sqrt(df$carat)
+df$x = df$x^(1/3)
+df$y = df$y^(1/3)
+df$z = df$z^(1/3)
+summary(df)
+```
+```{r}
+num_df <- subset(df,select=-c(cut,color,clarity)) %>% gather(.)
+
+ggplot(data=num_df,mapping=aes(x=value)) +
+geom_histogram(color="blue",fill="yellow",bins=25) + 
+facet_wrap(~key,scales='free_x') 
+```
+
+```{r}
+set.seed(100)
+r_index <- sample(c(TRUE,FALSE), nrow(df),replace=TRUE,prob=c(0.9,0.1))
+df.sample <- df[!r_index,]
+
+# Plot scatter plots of quantitative variables against the response variable 'price'
+df_new <- subset(df.sample,select=-c(price,cut,color,clarity)) %>% gather(.)
+num.var <- 6
+ggplot(data=df_new, mapping=aes(x=value,y=rep(df.sample$price,num.var))) + geom_point(size=0.2, color='red') + facet_wrap(~key,scales='free_x') + ylab("Price")
+
+```
+
+## Nonquantitative value
+
+```{r}
+df_cat = df %>% select(.,cut,color,clarity)  %>% gather(.)
+head(df_cat,3)
+```
+
+```{r}
+num.var <- 3
+ggplot(data=df_cat,mapping=aes(x=value,y=rep(df$price,num.var))) +
+geom_boxplot(color="blue",fill="#F78E80") +
+facet_wrap(~key,scale='free_x') +
+ylab("Price")
+# People that are non a student are more than people that are student
+```
+
+## Linear Regression
+
+```{r}
+predictors <- df %>% select(.,-price)
+response <- df %>% select(.,price)
+
+# Train-test split
+set.seed(100)
+r_index = sample(c(TRUE,FALSE), nrow(predictors),replace=TRUE,prob=c(0.8,0.2))
+pred.train = predictors[r_index,]
+pred.test = predictors[!r_index,]
+resp.train = response[r_index,]
+resp.test = response[!r_index,]
+```
+
+```{r}
+lm.out <- lm(resp.train~.,data=pred.train)
+summary(lm.out)
+```
+Adjusted R-squared = 0.9652, indicating the fit to the data is highly valid.
+
+```{r}
+price.pred = predict(lm.out,newdata=pred.test)
+plt = ggplot(mapping=aes(x=resp.test,y=price.pred)) + geom_point(color="red",size=0.5)
+plt + geom_abline(color='black') + ylab("Predicted price") + xlab("Observed price") 
+```
+
+```{r}
+price.pred = predict(lm.out,newdata=pred.test)
+residual = resp.test - price.pred
+ggplot(mapping=aes(x=residual)) + geom_histogram(color="black",fill="red",bins=20)
+```
+
+```{r}
+MSE = mean((resp.test - price.pred)^2)
+MSE
+```
+
+```{r}
+suppressMessages(library(bestglm))
+out.bg.aic = bestglm(pred.train,family=gaussian,IC="AIC")
+```
+```{r}
+out.bg.aic$BestModel
+```
+```{r}
+out.bg.bic = bestglm(pred.train,family=gaussian,IC="BIC")
+out.bg.bic$BestModel
+```
+
+```{r}
+bic.out = summary(out.bg.bic$BestModel)
+bic.mse = bic.out$r.squared
+bic.mse
+```
+
+```{r}
+aic.out = summary(out.bg.aic$BestModel)
+aic.mse = aic.out$r.squared
+aic.mse
+```
+
+## Summary
+
+Description of the data:
+There are 53940 rows and 11 variables in the ‘diamonds’ data set, with ‘price’ as the response variable. X is the row index, ‘cut’, ‘color’, and ‘clarity’ are categorical variables, and the rest of the variables are numerical (float and integer). 
+No null value or errorneous value is found in the data set.
+
+EDA:
+Histograms for the quantitative variables, correlation matrix are plotted.
+10% of the entire dataset is sampled randomly to plot scatter plot of the response variable against the quantitative variables.
+
+Linear Regression:
+Data is splitted into train and test set with a ratio of 80:20.
+AIC and BIC are carried out for model selection.
+
+The adjusted R-squared value of the best models obtained from AIC and BIC are 0.9835, indicating that the subset of features obtained with AIC can be used to predict the response variable ‘price’ with a high degree of accuracy.
